@@ -4,34 +4,32 @@
 #include <vector>
 #include <fstream>
 
-// start timestamp of transactions
-ll BarsGenerator::start_time = 1e15;
-
-// end timestamp of transactions
-ll BarsGenerator::end_time = 0;
-
 void BarsGenerator::run(std::istream &in_user, std::istream &in_market, std::ostream &out, ll p)
 {
     std::string inputline;
     std::getline(in_user, inputline);
     std::getline(in_market, inputline);
-    start_time = 1e15;
-    end_time = 0;
+
+    // start timestamp of transactions
+    ll start_time = 1e15;
+
+    // end timestamp of transactions
+    ll end_time = 0;
 
     // divide by symbols by files
     std::unordered_map<std::string, std::fstream> sym_streams; // SYMBOL - ostream
-    divide_by_symbols(in_market, sym_streams);
+    divide_by_symbols(in_market, sym_streams, start_time, end_time);
 
     // convert user deltas to the USD
     std::unordered_map<std::string, std::fstream> users_streams; // user_id- ostream
-    convert_user_entries_to_usd(in_user, sym_streams, users_streams);
+    convert_user_entries_to_usd(in_user, sym_streams, users_streams, start_time, end_time);
 
     // aggregate data by bars
     out << "user_id,minimum_balance,maximum_balance,average_balance,start_timestamp\n";
     for(auto& it: users_streams)
     {
         it.second.seekp(0, std::ios::beg);
-        create_user_bar(out, p, it.second);
+        create_user_bar(out, p, it.second, start_time, end_time);
     }
     
 }
@@ -79,7 +77,9 @@ bool BarsGenerator::read_market_entr(std::istream &stream, market_entr &entr)
 }
 
 // help function to divide file by symbols
-void BarsGenerator::divide_by_symbols(std::istream &in_market, std::unordered_map<std::string, std::fstream> &sym_streams)
+void BarsGenerator::divide_by_symbols(std::istream &in_market, 
+    std::unordered_map<std::string, std::fstream> &sym_streams,
+    ll &start_time, ll &end_time)
 {
     market_entr cur_m_entr;
     while(read_market_entr(in_market, cur_m_entr))
@@ -98,7 +98,8 @@ void BarsGenerator::divide_by_symbols(std::istream &in_market, std::unordered_ma
 // help function to convert users deltas to the usd
 void BarsGenerator::convert_user_entries_to_usd(std::istream& in_user,
     std::unordered_map<std::string, std::fstream> &sym_streams, 
-    std::unordered_map<std::string, std::fstream>& users_streams)
+    std::unordered_map<std::string, std::fstream>& users_streams,
+    ll &start_time, ll &end_time)
 {
     // Seek 0 in all sym_streams
     for(auto& it : sym_streams)
@@ -153,7 +154,8 @@ void BarsGenerator::convert_user_entries_to_usd(std::istream& in_user,
 }
 
 // help function to aggregate data by bars
-void BarsGenerator::create_user_bar(std::ostream &out, ll p, std::istream &in)
+void BarsGenerator::create_user_bar(std::ostream &out, ll p, std::istream &in,
+    ll &start_time, ll &end_time)
 {
     ll cur_start_bar = (start_time/p)*p; // start timestamp of current bar
     ll prev_u_entr_time = cur_start_bar; // previous timestamp of user entry

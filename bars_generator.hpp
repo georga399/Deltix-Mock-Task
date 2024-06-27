@@ -20,12 +20,6 @@ public:
 
 private:
 
-    // start timestamp of transactions
-    static ll start_time;
-
-    // end timestamp of transactions
-    static ll end_time;
-
     // entry in the user_data.csv
     struct user_entr
     {
@@ -50,15 +44,17 @@ private:
     static bool read_market_entr(std::istream &stream, market_entr &entr);
 
     // help function to divide file by symbols
-    static void divide_by_symbols(std::istream &in_market, std::unordered_map<std::string, std::fstream> &sym_streams);
+    static void divide_by_symbols(std::istream &in_market, std::unordered_map<std::string, std::fstream> &sym_streams, ll &start_time, ll &end_time);
 
     // help function to convert users deltas to the usd
     static void convert_user_entries_to_usd(std::istream &in_user, 
         std::unordered_map<std::string, std::fstream> &sym_streams, 
-        std::unordered_map<std::string, std::fstream> &users_streams);
+        std::unordered_map<std::string, std::fstream> &users_streams,
+        ll &start_time, ll &end_time);
 
     // help function to calculate and write of one user to the file
-    static void create_user_bar(std::ostream &out, ll p, std::istream &in);
+    static void create_user_bar(std::ostream &out, ll p, std::istream &in,
+        ll &start_time, ll &end_time);
 
 };
 
