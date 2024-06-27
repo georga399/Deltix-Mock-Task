@@ -39,7 +39,7 @@ CMakeCache.txt
 CMakeFiles
 CMakeScripts
 Testing
-Makefile
+# Makefile
 cmake_install.cmake
 install_manifest.txt
 compile_commands.json
@@ -53,3 +53,7 @@ user_data.csv
 bars-1h.csv
 bars-1d.csv
 bars-30d.csv
+
+bars-1h-2.csv
+bars-1h-1.csv
+bars-1h-3.csv
