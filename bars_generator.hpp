@@ -4,6 +4,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <list>
+#include <mutex>
 
 #define HOUR 3600
 #define DAY 24*3600
@@ -56,8 +57,8 @@ private:
         ll &start_time, ll &end_time);
 
     // help function to calculate and write of one user to the file
-    static void create_user_bar(std::ostream &out, ll p, std::list<user_entr> &user_list,
-        ll &start_time, ll &end_time);
+    static void create_user_bar(std::ostream &out, ll p, const std::list<user_entr> &user_list,
+        ll &start_time, ll &end_time, std::mutex &out_mutex);
 
 };
 

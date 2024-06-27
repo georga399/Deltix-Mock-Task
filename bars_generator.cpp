@@ -2,8 +2,7 @@
 #include <sstream>
 #include <unordered_map>
 #include <vector>
-#include <fstream>
-#include <list>
+#include <future>
 
 void BarsGenerator::run(std::istream &in_user, std::istream &in_market, std::ostream &out, ll p)
 {
@@ -27,12 +26,20 @@ void BarsGenerator::run(std::istream &in_user, std::istream &in_market, std::ost
 
     // aggregate data by bars
     out << "user_id,minimum_balance,maximum_balance,average_balance,start_timestamp\n";
-    for(auto& it: users_lists)
-    {
-        // it.second.seekp(0, std::ios::beg);
-        create_user_bar(out, p, it.second, start_time, end_time);
+
+
+    // Run futures
+    std::mutex out_mutex;
+    std::vector<std::future<void>> futures;
+    for (const auto& it : users_lists) {
+        futures.push_back(std::async(std::launch::async, 
+            create_user_bar, std::ref(out), p, std::cref(it.second), 
+            std::ref(start_time), std::ref(end_time), std::ref(out_mutex)));
     }
-    
+    // Wait for all futures to complete
+    for (auto& future : futures) {
+        future.get();
+    }
 }
 
 // help function to read one user_entry from user_data.csv
@@ -157,8 +164,8 @@ void BarsGenerator::convert_user_entries_to_usd(std::istream &in_user,
 }
 
 // help function to aggregate data by bars
-void BarsGenerator::create_user_bar(std::ostream &out, ll p, std::list<user_entr> &user_list,
-    ll &start_time, ll &end_time)
+void BarsGenerator::create_user_bar(std::ostream &out, ll p, const std::list<user_entr> &user_list,
+    ll &start_time, ll &end_time, std::mutex &out_mutex)
 {
     ll cur_start_bar = (start_time/p)*p; // start timestamp of current bar
     ll prev_u_entr_time = cur_start_bar; // previous timestamp of user entry
@@ -183,6 +190,7 @@ void BarsGenerator::create_user_bar(std::ostream &out, ll p, std::list<user_entr
             avg = int_avg/p;
             while(time - cur_start_bar >= p)
             {
+                std::lock_guard<std::mutex>  guard(out_mutex);
                 out << uid << ',' << min << ',' << max << ',' << avg << ',' << cur_start_bar << '\n';
                 cur_start_bar += p;
             }
@@ -205,7 +213,7 @@ void BarsGenerator::create_user_bar(std::ostream &out, ll p, std::list<user_entr
     }
     while(end_time - cur_start_bar >= p)
     {
-        //TODO: atomic
+        std::lock_guard<std::mutex>  guard(out_mutex);
         out << cur_u_entr.uid << ',' << min << ',' << max << ',' << avg << ',' << cur_start_bar << '\n';
         cur_start_bar += p;
     }
